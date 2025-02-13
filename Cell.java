@@ -3,6 +3,8 @@
  *
  * @author Tyler Youk
  */
+import java.awt.Color;
+
 public class Cell {
 
     // Private instance variables:
@@ -15,11 +17,20 @@ public class Cell {
      */
     private int age;
 
+    // New color field to store the cell's display color.
+    private Color color;
+
+    /**
+     * The default color for alive cells. This field can be updated at runtime.
+     */
+    public static Color defaultAliveColor = new Color(128, 0, 128);
+
     /**
      * Constructor for Cell.
      * Initializes the cell state.
-     * If alive is true, the cell's age is set to 1.
-     * Otherwise, the cell age is set to 0.
+     * [EXTRA CREDIT] Added color field to store the cell's display color.
+     * If alive is true, age is 1 and color purple.
+     * Otherwise, age is 0 and color white.
      *
      * @param alive a boolean value on whether the cell should be alive upon creation.
      */
@@ -27,9 +38,31 @@ public class Cell {
         this.alive = alive;
         if (alive) {
             this.age = 1;
+            this.color = Cell.defaultAliveColor; // Use the configurable default alive color.
         } else {
             this.age = 0;
+            this.color = Color.WHITE; // Default color for dead cell.
         }
+    }
+
+    /**
+     * Returns the current color of the cell.
+     * [EXTRA CREDIT]
+     * 
+     * @return the color of the cell.
+     */
+    public Color getColor() {
+        return color;
+    }
+
+    /**
+     * Can set new color in GameOfLife.
+     * [EXTRA CREDIT]
+     * 
+     * @param color the new color for the cell.
+     */
+    public void setColor(Color color) {
+        this.color = color;
     }
 
     /**
@@ -45,13 +78,14 @@ public class Cell {
     /**
      * Sets the cell state to alive.
      * Resets the age to 1 if the cell was not previously alive.
-     * If the cell is already alive, the age is not reset.
+     * Also sets the cell color to purple.
      * O(1)
      */
     public void setAlive() {
         if (!alive) {
             alive = true;
             age = 1;
+            this.color = Cell.defaultAliveColor; // Use the current default alive color.
         }
     }
 
@@ -79,11 +113,13 @@ public class Cell {
     }
 
     /**
-     * Reset the cell, similar to setting it to a dead state.
+     * Reset the cell, marking it as dead.
+     * Sets the color to white.
      * O(1)
      */
     public void reset() {
         alive = false;
         age = 0;
+        this.color = Color.WHITE; // reset color to white on dead.
     }
 }

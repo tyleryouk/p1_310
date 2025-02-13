@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
+import java.util.ArrayList;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -127,14 +128,14 @@ public class GameOfLife extends JFrame {
     private int cellSize = 10;
 
     /**
-     * The number of rows in the simulation grid.
+     * The selected color for cells.
      */
-    private int gridRows;
+    private Color selectedColor = new Color(128, 0, 128); // Default to purple.
 
     /**
-     * The number of columns in the simulation grid.
+     * The button to choose a color.
      */
-    private int gridCols;
+    private JButton chooseColorButton;
 
     /**
      * Constructs the GameOfLife application, initializing the GUI and linking
@@ -212,6 +213,19 @@ public class GameOfLife extends JFrame {
         speedSlider.setToolTipText("Adjust Simulation Speed");
         speedSlider.addChangeListener(e -> timer.setDelay(speedSlider.getValue()));
 
+        chooseColorButton = new JButton("Choose Color");
+        chooseColorButton.addActionListener(e -> {
+            // Open a color chooser dialog; initial color is the currently selectedColor.
+            Color newColor = JColorChooser.showDialog(this, "Choose Cell Color", selectedColor);
+            if (newColor != null) {
+                selectedColor = newColor;
+                // Optionally update the button background to reflect the chosen color.
+                chooseColorButton.setBackground(selectedColor);
+                // Update the global default alive color for all cells.
+                Cell.defaultAliveColor = selectedColor;
+            }
+        });
+
         controlPanel.add(startButton);
         controlPanel.add(Box.createVerticalStrut(10));
         controlPanel.add(pauseButton);
@@ -237,6 +251,8 @@ public class GameOfLife extends JFrame {
         controlPanel.add(new JLabel("Speed (Fast <-> Slow):"));
         controlPanel.add(Box.createVerticalStrut(10));
         controlPanel.add(speedSlider);
+
+        controlPanel.add(chooseColorButton);
     }
 
     /**
@@ -287,7 +303,22 @@ public class GameOfLife extends JFrame {
             public void mousePressed(MouseEvent evt) {
                 int col = evt.getX() / cellSize;
                 int row = evt.getY() / cellSize;
-                simulation.toggleCell(row, col);
+                // Left-click toggles the cell's alive state.
+                if (evt.getButton() == MouseEvent.BUTTON1) {
+                    simulation.toggleCell(row, col);
+                    // Retrieve the toggled cell and set its color to selectedColor.
+                    Cell cell = simulation.getGrid().get(new Point(row, col));
+                    if (cell != null && cell.isAlive()) {
+                        cell.setColor(selectedColor);
+                    }
+                }
+                // Right-click also sets the cell color to the currently selected color.
+                else if (evt.getButton() == MouseEvent.BUTTON3) {
+                    Cell cell = simulation.getGrid().get(new Point(row, col));
+                    if (cell != null && cell.isAlive()) {
+                        cell.setColor(selectedColor);
+                    }
+                }
                 gridPanel.repaint();
             }
         });
@@ -317,19 +348,16 @@ public class GameOfLife extends JFrame {
 
     /**
      * Draws the grid and cells on the grid panel.
-     * 
      * @param g the Graphics object used for rendering
      */
     private void drawGrid(Graphics g) {
-        DynamicArray<DynamicArray<Cell>> grid = simulation.getGrid();
-        int maxAge = simulation.getMaxAge();
-
+        HashMap<Point, Cell> grid = simulation.getGrid();
+        
         for (int row = 0; row < simulation.getRows(); row++) {
             for (int col = 0; col < simulation.getCols(); col++) {
-                Cell cell = grid.get(row).get(col);
-                if (cell.isAlive()) {
-                    int age = cell.getAge();
-                    g.setColor(Color.BLACK); 
+                Cell cell = grid.get(new Point(row, col));
+                if (cell != null && cell.isAlive()) {
+                    g.setColor(cell.getColor());
                     g.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
                 }
                 g.setColor(Color.LIGHT_GRAY);
@@ -385,10 +413,6 @@ public class GameOfLife extends JFrame {
         // Adjust gridPanel dimensions
         gridPanel.repaint();
 
-        // Update gridRows and gridCols for consistency
-        simulation.setRows(newSize);
-        simulation.setCols(newSize);
-
         // Reset statistics and repaint
         updateStatistics();
         gridPanel.repaint();
@@ -404,7 +428,7 @@ public class GameOfLife extends JFrame {
         if (result == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             try {
-                DynamicArray<String> lines = new DynamicArray<>();
+                ArrayList<String> lines = new ArrayList<>();
                 try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
